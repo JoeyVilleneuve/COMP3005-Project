@@ -17,7 +17,7 @@ user = 'postgres'
 password = 'green6'
 host = 'localhost'
 port = "5432"
-data_directory = Path('C:/Users/gamer/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
+data_directory = Path('C:/Users/joey/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
 
 # DROP then CREATE project_database (in case script was ran previously)
 connection = psycopg.connect(dbname='postgres', user=user, password=password, host=host, port=port)
@@ -35,19 +35,38 @@ cursor = connection.cursor()
 
 # Create tables
 cursor.execute("""
-    CREATE TABLE competitions (
+    CREATE TABLE competition (
+        competition_id INT NOT NULL,
+        country_name VARCHAR(30),
+        competition_name VARCHAR(30),
+        competition_gender VARCHAR(10),
+        competition_youth BOOLEAN,
+        competition_international BOOLEAN,
+        PRIMARY KEY (competition_id)
+    );
+               
+    CREATE TABLE season (
         competition_id INT NOT NULL,
         season_id INT NOT NULL,
-        country_name VARCHAR(50),
-        competition_name VARCHAR(50),
-        competition_gender VARCHAR(50),
-        competition_youth VARCHAR(50),
-        competition_international VARCHAR(50),
-        season_name VARCHAR(50) NOT NULL,
-        match_updated TIMESTAMP,
-        match_updated_360 TIMESTAMP,
-        match_available_360 TIMESTAMP,
-        match_available TIMESTAMP
+        season_name VARCHAR(30),
+        PRIMARY KEY (season_id),
+        FOREIGN KEY (competition_id) REFERENCES competition(competition_id)
+    );
+               
+    CREATE TABLE match (
+        season_id INT NOT NULL,
+        match_id INT NOT NULL,
+        stadium_id INT NOT NULL,
+        referee_id INT NOT NULL,
+        match_date TIMESTAMP,
+        match_week INT NOT NULL,
+        kick_off TIMESTAMP,
+        home_team_id INT NOT NULL,
+        away_team_id INT NOT NULL,
+        home_score INT NOT NULL,
+        away_score INT NOT NULL,
+        PRIMARY KEY (match_id),
+        FOREIGN KEY (season_id) REFERENCES season(season_id)
     );
     """)
 
@@ -61,8 +80,20 @@ for entry in data_directory.iterdir():
 
     if (entry.name == "competitions.json"): # Competitions
         with open(entry) as f:
-            competitions_data = f.read()
-        cursor.execute('INSERT INTO competitions SELECT * FROM json_populate_recordset(NULL::competitions, %s);', (competitions_data,))
+            competitions_data = json.load(f)
+
+        seen = []
+        for competition in competitions_data:
+
+            if (competition["competition_id"] not in seen):  # Insert each unique competition into competition table
+                cursor.execute("INSERT INTO competition(competition_id, country_name, competition_name, competition_gender, competition_youth, competition_international) VALUES (%s, %s, %s, %s, %s, %s)",
+                (competition["competition_id"], competition["country_name"], competition["competition_name"], competition["competition_gender"], competition["competition_youth"], competition["competition_international"]))
+                seen.append(competition["competition_id"])
+
+            # TO-DO: Find a way workaround for duplicate season_ids
+            cursor.execute("INSERT INTO season(competition_id, season_id, season_name) VALUES (%s, %s, %s)", # Insert each target season into season table
+            (competition["competition_id"], competition["season_id"], competition["season_name"]))
+            
 
     if (entry.name == "events"): # Events: Formatted as data/events/[match_id].json
         for file in entry.iterdir():
@@ -81,7 +112,8 @@ for entry in data_directory.iterdir():
                         with open(season_id, encoding="utf8") as f:
                             data = json.loads(f.read())
                         for element in data:
-                            print(element["competition"]["competition_name"], element["season"])
+                            pass
+                            #print(element["competition"]["competition_name"], element["season"])
             # Premier League
             elif (competition_id.name == "2"):
                 for season_id in competition_id.iterdir():
@@ -89,11 +121,13 @@ for entry in data_directory.iterdir():
                         with open(season_id, encoding="utf8") as f:
                             data = json.loads(f.read())
                         for element in data:
-                            print(element["competition"]["competition_name"], element["season"])
+                            pass
+                            #print(element["competition"]["competition_name"], element["season"])
 
 # DEBUGGING ---------------------------------------- (delete before submitting)
-#cursor.execute('SELECT * FROM competitions')
-#print(cursor.fetchall())
+cursor.execute('SELECT * FROM competition')
+cursor.execute('SELECT * FROM season')
+print(cursor.fetchall())
 
 # CLOSE CONNECTION ---------------------------------
 connection.commit()
