@@ -17,7 +17,7 @@ user = 'postgres'
 password = 'green6'
 host = 'localhost'
 port = "5432"
-data_directory = Path('C:/Users/gamer/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
+data_directory = Path('C:/Users/joey/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
 
 # DROP then CREATE project_database (in case script was ran previously)
 connection = psycopg.connect(dbname='postgres', user=user, password=password, host=host, port=port)
@@ -176,7 +176,6 @@ cursor.execute("""
         event_id VARCHAR(40) NOT NULL,
         player_id INT NOT NULL,
         location VARCHAR(20),
-        under_pressure BOOLEAN,
         PRIMARY KEY (dispossessed_id),
         FOREIGN KEY (event_id) REFERENCES event(event_id),
         FOREIGN KEY (player_id) REFERENCES player(player_id) 
@@ -187,18 +186,112 @@ cursor.execute("""
         event_id VARCHAR(40) NOT NULL,
         player_id INT NOT NULL,
         location VARCHAR(20),
-        under_pressure BOOLEAN,
-        counterpress BOOLEAN,
-        duel_type VARCHAR(10),
-        duel_outcome VARCHAR(10),
+        counterpress BOOLEAN DEFAULT 'false',
+        type VARCHAR(20),
+        outcome VARCHAR(20),
         PRIMARY KEY (duel_id),
         FOREIGN KEY (event_id) REFERENCES event(event_id),
         FOREIGN KEY (player_id) REFERENCES player(player_id)
     );
 
-
-
+    CREATE TABLE camera_on (
+        camera_on_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        PRIMARY KEY (camera_on_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+    );
                
+    CREATE TABLE block (
+        block_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (block_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+    );
+
+    CREATE TABLE offside (
+        offside_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (offside_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+    );
+               
+    CREATE TABLE clearance (
+        clearance_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (clearance_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+    );
+               
+    CREATE TABLE interception (
+        interception_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        outcome VARCHAR(20),
+        PRIMARY KEY (interception_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+    );
+               
+    CREATE TABLE dribble (
+        dribble_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        outcome VARCHAR(20),
+        PRIMARY KEY (dribble_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+
+    CREATE TABLE pass (
+        pass_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        end_location VARCHAR(20),
+        duration INT,
+        recipient_id INT,
+        length INT,
+        angle INT,
+        height VARCHAR(20),
+        body_part VARCHAR(20),
+        type VARCHAR(20),
+        PRIMARY KEY (pass_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id),
+        FOREIGN KEY (recipient_id) REFERENCES player(player_id)
+    );
+
+    CREATE TABLE shot (
+        shot_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        end_location VARCHAR(20),
+        duration INT,
+        xg INT,
+        key_pass_id VARCHAR(40),
+        outcome VARCHAR(20),
+        body_part VARCHAR(20),
+        technique VARCHAR(20),
+        type VARCHAR(20),
+        PRIMARY KEY (shot_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id),
+        FOREIGN KEY (key_pass_id) REFERENCES event(event_id)
+    );
 
     CREATE TABLE ball_receipt (
         ball_receipt_id SERIAL,
@@ -234,7 +327,7 @@ for entry in data_directory.iterdir(): # Read in competitions & matches first
             # Insert each target season from each target competition into season table
             if (competition["competition_id"] in target_competitions and competition["season_id"] in target_seasons):
                 cursor.execute("INSERT INTO season(season_id, competition_id, season_name) VALUES (%s, %s, %s)",
-                (competition["season_id"], competition["competition_id"], competition["season_name"]))              
+                (competition["season_id"], competition["competition_id"], competition["season_name"]))             
 
     elif (entry.name == "matches"): # Matches: Formatted as data/matches/[competition_id]/[season_id].json
         seen_managers = []
@@ -297,6 +390,7 @@ for entry in data_directory.iterdir(): # Read in competitions & matches first
                                     cursor.execute("INSERT INTO referee(referee_id, referee_name, referee_country) VALUES (%s, %s, %s)",
                                     (match["referee"]["id"], match["referee"]["name"], match["referee"]["country"]["name"]))
                                     seen_referees.append(match["referee"]["id"])
+        connection.commit()
 
 for entry in data_directory.iterdir(): # Read in lineups after seen_matches has been filled (we only care about data related to those matches)
     
@@ -336,99 +430,163 @@ for entry in data_directory.iterdir(): # Read in lineups after seen_matches has 
                         for card in element["cards"]:
                             cursor.execute("INSERT INTO card(lineup_id, player_id, card_type, card_time, card_reason, card_period) VALUES (%s, %s, %s, %s, %s, %s)",
                             (num_lineups, element["player_id"], card["card_type"], card["time"], card["reason"], card["period"]))
-                        
+        connection.commit()
+
 for entry in data_directory.iterdir(): # Read in events after lineups have been filled (we need all players to exist)
 
     if (entry.name == "events"): # Events: Formatted as data/events/[match_id].json
+
             for m in entry.iterdir():
                 match_number = int((m.name).split(".")[0])
                 if (match_number in seen_matches): # Remove '.json' from filename
                     with open(m, encoding="utf8") as f:
                         data = json.loads(f.read())
+
+                    args = "" # There are over 100,000 events, concatenating many INSERTs into one cursor command is far faster
+
                     for event in data:
 
                         # Insert each event into event table
-                        cursor.execute("INSERT INTO event(event_id, match_id, event_index, event_period, event_timestamp, possession_index, possession_team_id, team_id, play_pattern) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                        (event["id"], match_number, event["index"], event["period"], event["timestamp"], event["possession"], event["possession_team"]["id"], event["team"]["id"], event["play_pattern"]["name"]))
+                        args += "INSERT INTO event(event_id, match_id, event_index, event_period, event_timestamp, possession_index, possession_team_id, team_id, play_pattern) VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}');".format(event["id"], match_number, event["index"], event["period"], event["timestamp"], event["possession"], event["possession_team"]["id"], event["team"]["id"], event["play_pattern"]["name"])
 
                         # Each event type has its own table which link to the related event_id
                         event_type = event["type"]["id"]
                         match event_type:
+
                             case 2: # Ball recovery
                                 cursor.execute("INSERT INTO ball_recovery(event_id, player_id, location) VALUES (%s, %s, %s)",
                                 (event["id"], event["player"]["id"], event["location"]))
                                 if ("ball_recovery" in event):
                                     if ("recovery_failure" in event["ball_recovery"]):
-                                        cursor.execute("UPDATE ball_recover SET recovery_failure = %s WHERE event_id = %s", (event["ball_recovery"]["recovery_failure"], event["id"]))
+                                        cursor.execute("UPDATE ball_recovery SET recovery_failure = %s WHERE event_id = %s", (event["ball_recovery"]["recovery_failure"], event["id"]))
+
                             case 3: # Dispossessed
-                                cursor.execute("INSERT INTO dispossessed(event_id, player_id, location, under_pressure) VALUES (%s, %s, %s, %s)",
-                                (event["id"], event["player"]["id"], event["location"], event["under_pressure"]))
+                                cursor.execute("INSERT INTO dispossessed(event_id, player_id, location) VALUES (%s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"]))
+
                             case 4: # Duel
-                                cursor.execute("INSERT INTO duel(event_id, player_id, location, under_pressure, counterpress, duel_type, duel_outcome) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                                ())
+                                cursor.execute("INSERT INTO duel(event_id, player_id, location, type) VALUES (%s, %s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"], event["duel"]["type"]["name"]))
+                                if ("counterpress" in event):
+                                    cursor.execute("UPDATE duel SET counterpress = %s WHERE event_id = %s", (event["counterpress"], event["id"]))
+                                if ("outcome" in event["duel"]):
+                                    cursor.execute("UPDATE duel SET outcome = %s WHERE event_id = %s", (event["duel"]["outcome"]["name"], event["id"]))
+
                             case 5: # Camera On
-                                pass
+                                cursor.execute("INSERT INTO camera_on(event_id, player_id) VALUES (%s, %s)",
+                                (event["id"], event["player"]["id"]))
+
                             case 6: # Block
-                                pass
+                                cursor.execute("INSERT INTO block(event_id, player_id, location) VALUES (%s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"]))
+
                             case 8: # Offside
-                                pass
+                                cursor.execute("INSERT INTO offside(event_id, player_id, location) VALUES (%s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"]))
+
                             case 9: # Clearance
-                                pass
+                                cursor.execute("INSERT INTO clearance(event_id, player_id, location) VALUES (%s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"]))
+
                             case 10: # Interception
-                                pass
+                                cursor.execute("INSERT INTO interception(event_id, player_id, location, outcome) VALUES (%s, %s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"], event["interception"]["outcome"]["name"]))
+
                             case 14: # Dribble
-                                pass
+                                cursor.execute("INSERT INTO dribble(event_id, player_id, location, outcome) VALUES (%s, %s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"], event["dribble"]["outcome"]["name"]))
+
                             case 16: # Shot
-                                pass
+                                cursor.execute("INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, outcome, body_part, technique, type) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"]))
+                                if ("key_pass_id" in event["shot"]):
+                                    cursor.execute("UPDATE shot SET key_pass_id = %s WHERE event_id = %s", (event["shot"]["key_pass_id"], event["id"]))
+                            
                             case 17: # Pressure
                                 pass
+                            
                             case 18: # Half start
                                 pass
+                            
                             case 19: # Substitution
                                 pass
+                            
                             case 20: # Own goal against
                                 pass
+                            
                             case 21: # Foul won
                                 pass
+                            
                             case 22: # Foul committed
                                 pass
+                            
                             case 23: # Goal keeper
                                 pass
+                            
                             case 24: # Bad behaviour
                                 pass
+                            
                             case 25: # Own goal for
                                 pass
+                            
                             case 26: # Player on
                                 pass
+                            
                             case 27: # Player off
                                 pass
+                            
                             case 28: # Shield
                                 pass
+                            
                             case 30: # Pass
-                                pass
+                                cursor.execute("INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                                (event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"]))
+                                if ("recipient" in event["pass"]):
+                                    cursor.execute("UPDATE pass SET recipient_id = %s WHERE event_id = %s", (event["pass"]["recipient"]["id"], event["id"]))
+                                if ("body_part" in event["pass"]):
+                                    cursor.execute("UPDATE pass SET body_part = %s WHERE event_id = %s", (event["pass"]["body_part"]["name"], event["id"]))
+                                if ("type" in event["pass"]):
+                                    cursor.execute("UPDATE pass SET type = %s WHERE event_id = %s", (event["pass"]["type"]["name"], event["id"]))
+                            
                             case 33: # 50/50
                                 pass
+                            
                             case 34: # Half end
                                 pass
+                            
                             case 35: # Starting XI
                                 pass
+                            
                             case 36: # Tactical shift
                                 pass
+                            
                             case 37: # Error
                                 pass
+                            
                             case 38: # Miscontrol
                                 pass
+                            
                             case 39: # Dribbled past
                                 pass
+                            
                             case 40: # Injury stoppage
                                 pass
+                            
                             case 41: # Referee ball-drop
                                 pass
+                            
                             case 42: # Ball receipt
                                 cursor.execute("INSERT INTO ball_receipt(event_id, player_id, location) VALUES (%s, %s, %s)",
                                 (event["id"], event["player"]["id"], event["location"]))
+                            
                             case 43: # Carry
                                 pass
+                                
+                        """
+                    cursor.execute(args)
+                        
+                    connection.commit()
+            connection.commit()
 
 # DEBUGGING ---------------------------------------- (delete before submitting)
 #cursor.execute('SELECT * FROM ball_receipt')
