@@ -9,7 +9,7 @@ Authors: Joey Villeneuve, Ben Seguin, Austin Rimmer
 ====================================================
 TA - Please change login credentials as needed in-file before running.
       
-Creating database, this may take a minute...
+Creating database, this may take a few minutes...
 """)
 
 # TA: Change as needed
@@ -17,7 +17,7 @@ user = 'postgres'
 password = 'green6'
 host = 'localhost'
 port = "5432"
-data_directory = Path('C:/Users/joey/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
+data_directory = Path('C:/Users/gamer/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
 
 # DROP then CREATE project_database (in case script was ran previously)
 connection = psycopg.connect(dbname='postgres', user=user, password=password, host=host, port=port)
@@ -115,6 +115,7 @@ cursor.execute("""
             
     CREATE TABLE lineup (
         lineup_id SERIAL,
+        match_id INT NOT NULL,
         PRIMARY KEY (lineup_id)
     );
                
@@ -197,10 +198,8 @@ cursor.execute("""
     CREATE TABLE camera_on (
         camera_on_id SERIAL,
         event_id VARCHAR(40) NOT NULL,
-        player_id INT NOT NULL,
         PRIMARY KEY (camera_on_id),
-        FOREIGN KEY (event_id) REFERENCES event(event_id),
-        FOREIGN KEY (player_id) REFERENCES player(player_id) 
+        FOREIGN KEY (event_id) REFERENCES event(event_id)
     );
                
     CREATE TABLE block (
@@ -261,10 +260,10 @@ cursor.execute("""
         player_id INT NOT NULL,
         location VARCHAR(20),
         end_location VARCHAR(20),
-        duration INT,
+        duration DECIMAL,
         recipient_id INT,
-        length INT,
-        angle INT,
+        length DECIMAL,
+        angle DECIMAL,
         height VARCHAR(20),
         body_part VARCHAR(20),
         type VARCHAR(20),
@@ -280,8 +279,8 @@ cursor.execute("""
         player_id INT NOT NULL,
         location VARCHAR(20),
         end_location VARCHAR(20),
-        duration INT,
-        xg INT,
+        duration DECIMAL,
+        xg DECIMAL,
         key_pass_id VARCHAR(40),
         outcome VARCHAR(20),
         body_part VARCHAR(20),
@@ -292,6 +291,202 @@ cursor.execute("""
         FOREIGN KEY (player_id) REFERENCES player(player_id),
         FOREIGN KEY (key_pass_id) REFERENCES event(event_id)
     );
+               
+    CREATE TABLE pressure (
+        pressure_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        duration DECIMAL,
+        PRIMARY KEY (pressure_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)    
+    );
+               
+    CREATE TABLE half_start (
+        half_start_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        duration DECIMAL,
+        PRIMARY KEY (half_start_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)   
+    );
+               
+    CREATE TABLE substitution (
+        substitution_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        duration DECIMAL,
+        outcome VARCHAR(20),
+        replacement_id INT NOT NULL,
+        PRIMARY KEY (substitution_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id), 
+        FOREIGN KEY (replacement_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE own_goal_against (
+        own_goal_against_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        PRIMARY KEY (own_goal_against_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)
+    );
+               
+    CREATE TABLE foul_won (
+        foul_won_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        duration DECIMAL,
+        PRIMARY KEY (foul_won_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE foul_committed (
+        foul_committed_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        duration DECIMAL,     
+        PRIMARY KEY (foul_committed_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)       
+    );
+               
+    CREATE TABLE goalkeeper (
+        goalkeeper_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        end_location VARCHAR(20),
+        duration DECIMAL,    
+        type VARCHAR(30),
+        position VARCHAR(30),
+        PRIMARY KEY (goalkeeper_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)       
+    );
+               
+    CREATE TABLE bad_behaviour (
+        bad_behaviour_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        duration DECIMAL,   
+        card_type VARCHAR(20),
+        PRIMARY KEY (bad_behaviour_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)       
+    );
+               
+    CREATE TABLE own_goal_for (
+        own_goal_for_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        PRIMARY KEY (own_goal_for_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)
+    );
+               
+    CREATE TABLE player_on (
+        player_on_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        PRIMARY KEY (player_on_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE player_off (
+        player_off_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        PRIMARY KEY (player_off_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE shield (
+        shield_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (shield_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE _50_50 (
+        _50_50_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        outcome VARCHAR(30),
+        PRIMARY KEY (_50_50_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE half_end (
+        half_end_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        PRIMARY KEY (half_end_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)
+    );
+               
+    CREATE TABLE error (
+        error_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (error_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE miscontrol (
+        miscontrol_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (miscontrol_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE dribbled_past (
+        dribbled_past_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        PRIMARY KEY (dribbled_past_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)
+    );
+               
+    CREATE TABLE injury_stoppage (
+        injury_stoppage_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        PRIMARY KEY (injury_stoppage_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)
+    );
+               
+    CREATE TABLE referee_ball_drop (
+        referee_ball_drop_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        location VARCHAR(20),
+        duration DECIMAL,   
+        PRIMARY KEY (referee_ball_drop_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id)    
+    );
+               
+    CREATE TABLE carry (
+        carry_id SERIAL,
+        event_id VARCHAR(40) NOT NULL,
+        player_id INT NOT NULL,
+        location VARCHAR(20),
+        duration DECIMAL,   
+        PRIMARY KEY (carry_id),
+        FOREIGN KEY (event_id) REFERENCES event(event_id),
+        FOREIGN KEY (player_id) REFERENCES player(player_id)       
+    );
 
     CREATE TABLE ball_receipt (
         ball_receipt_id SERIAL,
@@ -301,8 +496,7 @@ cursor.execute("""
         PRIMARY KEY (ball_receipt_id),
         FOREIGN KEY (event_id) REFERENCES event(event_id),
         FOREIGN KEY (player_id) REFERENCES player(player_id)
-    );
-               
+    );       
     """)
 
 # Read in JSON files
@@ -405,7 +599,7 @@ for entry in data_directory.iterdir(): # Read in lineups after seen_matches has 
                 for lineup in data:
                     
                     # Create a new lineup entry for each lineup
-                    cursor.execute("INSERT INTO lineup DEFAULT VALUES")
+                    cursor.execute("INSERT INTO lineup(match_id) VALUES (%s)", (match_number,))
                     num_lineups+=1
                     # Connect lineups to corresponding match, 2 lineups per match (uneven num_lineups = home team, even num_lineups = away team)
                     if(num_lineups % 2 == 0):
@@ -473,7 +667,7 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
                                 args += "INSERT INTO duel(event_id, player_id, location, type) VALUES ('{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["duel"]["type"]["name"])
 
                         case 5: # Camera On
-                            args += "INSERT INTO camera_on(event_id, player_id) VALUES ('{}', '{}');".format(event["id"], event["player"]["id"])
+                            args += "INSERT INTO camera_on(event_id) VALUES ('{}');".format(event["id"])
 
                         case 6: # Block
                             args += "INSERT INTO block(event_id, player_id, location) VALUES ('{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"])
@@ -497,43 +691,60 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
                                 args += "INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, outcome, body_part, technique, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"])
                         
                         case 17: # Pressure
-                            pass
+                            args += "INSERT INTO pressure(event_id, player_id, location, duration) VALUES ('{}', '{}', '{}', {});".format(event["id"], event["player"]["id"], event["location"], event["duration"])
                         
                         case 18: # Half start
-                            pass
+                             args += "INSERT INTO half_start(event_id, duration) VALUES ('{}', {});".format(event["id"], event["duration"])
                         
                         case 19: # Substitution
-                            pass
+                            args += "INSERT INTO substitution(event_id, player_id, duration, outcome, replacement_id) VALUES ('{}', '{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["duration"], event["substitution"]["outcome"]["name"], event["substitution"]["replacement"]["id"])
                         
                         case 20: # Own goal against
-                            pass
+                            args += "INSERT INTO own_goal_for(event_id) VALUES ('{}');".format(event["id"])
                         
                         case 21: # Foul won
-                            pass
-                        
+                            args += "INSERT INTO foul_won(event_id, player_id, location, duration) VALUES ('{}', '{}', '{}', {});".format(event["id"], event["player"]["id"], event["location"], event["duration"])
+
                         case 22: # Foul committed
-                            pass
+                            args += "INSERT INTO foul_committed(event_id, player_id, location, duration) VALUES ('{}', '{}', '{}', {});".format(event["id"], event["player"]["id"], event["location"], event["duration"])
                         
                         case 23: # Goal keeper
-                            pass
-                        
+                            if ("location" in event):
+                                if ("end_location" in event["goalkeeper"] and "position" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, location, end_location, duration, type, position) VALUES ('{}', '{}', '{}', '{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["goalkeeper"]["end_location"], event["duration"], event["goalkeeper"]["type"]["name"], event["goalkeeper"]["position"]["name"])
+                                elif ("end_location" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, location, end_location, duration, type) VALUES ('{}', '{}', '{}', '{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"], event["goalkeeper"]["end_location"], event["duration"], event["goalkeeper"]["type"]["name"])
+                                elif ("position" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, location, duration, type, position) VALUES ('{}', '{}', '{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["duration"], event["goalkeeper"]["type"]["name"], event["goalkeeper"]["position"]["name"])                
+                                else:
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, location, duration, type) VALUES ('{}', '{}', '{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"], event["duration"], event["goalkeeper"]["type"]["name"])  
+                            else:
+                                if ("end_location" in event["goalkeeper"] and "position" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, end_location, duration, type, position) VALUES ('{}', '{}', '{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["goalkeeper"]["end_location"], event["duration"], event["goalkeeper"]["type"]["name"], event["goalkeeper"]["position"]["name"])
+                                elif ("end_location" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, end_location, duration, type) VALUES ('{}', '{}', '{}', {}, '{}');".format(event["id"], event["player"]["id"], event["goalkeeper"]["end_location"], event["duration"], event["goalkeeper"]["type"]["name"])
+                                elif ("position" in event["goalkeeper"]):
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, duration, type, position) VALUES ('{}', '{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["duration"], event["goalkeeper"]["type"]["name"], event["goalkeeper"]["position"]["name"])                
+                                else:
+                                    args += "INSERT INTO goalkeeper(event_id, player_id, duration, type) VALUES ('{}', '{}', {}, '{}');".format(event["id"], event["player"]["id"], event["duration"], event["goalkeeper"]["type"]["name"])  
+          
                         case 24: # Bad behaviour
-                            pass
+                            args += "INSERT INTO bad_behaviour(event_id, player_id, duration, card_type) VALUES ('{}', '{}', {}, '{}');".format(event["id"], event["player"]["id"], event["duration"], event["bad_behaviour"]["card"]["name"])
                         
                         case 25: # Own goal for
-                            pass
-                        
+                            args += "INSERT INTO own_goal_for(event_id) VALUES ('{}');".format(event["id"])
+
                         case 26: # Player on
-                            pass
+                            args += "INSERT INTO player_on(event_id, player_id) VALUES ('{}', {});".format(event["id"], event["player"]["id"])
                         
                         case 27: # Player off
-                            pass
+                            args += "INSERT INTO player_off(event_id, player_id) VALUES ('{}', {});".format(event["id"], event["player"]["id"])
                         
                         case 28: # Shield
-                            pass
+                            args += "INSERT INTO shield(event_id, player_id, location) VALUES ('{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 30: # Pass     
-                            event_pass = event["pass"] # Frustratingly, passes have 3 fields of data that *maybe* exist, have to account for all combinations to use only one INSERT
+                            event_pass = event["pass"]
                             if ("recipient" in event_pass and "body_part" in event_pass and "type" in event_pass):
                                 args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, recipient_id, body_part, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["recipient"]["id"], event["pass"]["body_part"]["name"], event["pass"]["type"]["name"])
                             elif ("recipient" in event_pass and "body_part" in event_pass):
@@ -552,42 +763,36 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
                                 args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"])
                         
                         case 33: # 50/50
-                            pass
+                            args += "INSERT INTO _50_50(event_id, player_id, location, outcome) VALUES ('{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["50_50"]["outcome"]["name"])
                         
                         case 34: # Half end
-                            pass
-                        
-                        case 35: # Starting XI
-                            pass
-                        
-                        case 36: # Tactical shift
-                            pass
+                            args += "INSERT INTO half_end(event_id) VALUES ('{}');".format(event["id"])
                         
                         case 37: # Error
-                            pass
+                            args += "INSERT INTO error(event_id, player_id, location) VALUES ('{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 38: # Miscontrol
-                            pass
+                            args += "INSERT INTO miscontrol(event_id, player_id, location) VALUES ('{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 39: # Dribbled past
-                            pass
+                            args += "INSERT INTO dribbled_past(event_id, player_id, location) VALUES ('{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 40: # Injury stoppage
-                            pass
+                            args += "INSERT INTO injury_stoppage(event_id) VALUES ('{}');".format(event["id"])
                         
                         case 41: # Referee ball-drop
-                            pass
+                            args += "INSERT INTO referee_ball_drop(event_id, location, duration) VALUES ('{}', '{}', {});".format(event["id"], event["location"], event["duration"])
                         
                         case 42: # Ball receipt
                             args += "INSERT INTO ball_receipt(event_id, player_id, location) VALUES ('{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 43: # Carry
-                            pass
+                            args += "INSERT INTO carry(event_id, player_id, location, duration) VALUES ('{}', '{}', '{}', {});".format(event["id"], event["player"]["id"], event["location"], event["duration"])
 
                 cursor.execute(args)
         connection.commit()
 
-# DEBUGGING ---------------------------------------- (delete before submitting)
+# DEBUGGING ----------------------------------------
 #cursor.execute('SELECT * FROM ball_receipt')
 #print(cursor.fetchall())
 
