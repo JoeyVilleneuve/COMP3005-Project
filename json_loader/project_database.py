@@ -14,10 +14,10 @@ Creating database, this may take a few minutes...
 
 # TA: Change as needed
 user = 'postgres'
-password = 'green6'
+password = '1234'
 host = 'localhost'
 port = "5432"
-data_directory = Path('C:/Users/gamer/OneDrive/Documents/GitHub/data') # Where the StatsBomb data folder (use "/", not "\")
+data_directory = Path('/media/sf_VM_Folder/data/') # Where the StatsBomb data folder is (i.e. '/media/sf_VM_Folder/data/')
 
 # DROP then CREATE project_database (in case script was ran previously)
 connection = psycopg.connect(dbname='postgres', user=user, password=password, host=host, port=port)
@@ -266,6 +266,9 @@ cursor.execute("""
         angle DECIMAL,
         height VARCHAR(20),
         body_part VARCHAR(20),
+        technique VARCHAR(20),
+        shot_assist BOOLEAN DEFAULT 'false',
+        outcome VARCHAR(20),
         type VARCHAR(20),
         PRIMARY KEY (pass_id),
         FOREIGN KEY (event_id) REFERENCES event(event_id),
@@ -281,6 +284,7 @@ cursor.execute("""
         end_location VARCHAR(20),
         duration DECIMAL,
         xg DECIMAL,
+        first_time BOOLEAN DEFAULT 'false',
         key_pass_id VARCHAR(40),
         outcome VARCHAR(20),
         body_part VARCHAR(20),
@@ -685,8 +689,12 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
                             args += "INSERT INTO dribble(event_id, player_id, location, outcome) VALUES ('{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["dribble"]["outcome"]["name"])
 
                         case 16: # Shot
-                            if ("key_pass_id" in event["shot"]):
+                            if ("key_pass_id" in event["shot"] and "first_time" in event["shot"]):
+                                args += "INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, first_time, outcome, body_part, technique, type, key_pass_id) VALUES ('{}', '{}', '{}', '{}', {}, {}, '{}', '{}', '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["first_time"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"], event["shot"]["key_pass_id"])
+                            elif ("key_pass_id" in event["shot"]):
                                 args += "INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, outcome, body_part, technique, type, key_pass_id) VALUES ('{}', '{}', '{}', '{}', {}, {}, '{}', '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"], event["shot"]["key_pass_id"])
+                            elif ("first_time" in event["shot"]):
+                                args += "INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, first_time, outcome, body_part, technique, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, '{}', '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["first_time"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"])
                             else:
                                 args += "INSERT INTO shot(event_id, player_id, location, end_location, duration, xg, outcome, body_part, technique, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["shot"]["end_location"], event["duration"], event["shot"]["statsbomb_xg"], event["shot"]["outcome"]["name"], event["shot"]["body_part"]["name"], event["shot"]["technique"]["name"], event["shot"]["type"]["name"])
                         
@@ -744,24 +752,44 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
                             args += "INSERT INTO shield(event_id, player_id, location) VALUES ('{}', {}, '{}');".format(event["id"], event["player"]["id"], event["location"])
                         
                         case 30: # Pass     
+                            # Too many optional components of a pass to make an if statement for each combination
                             event_pass = event["pass"]
-                            if ("recipient" in event_pass and "body_part" in event_pass and "type" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, recipient_id, body_part, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["recipient"]["id"], event["pass"]["body_part"]["name"], event["pass"]["type"]["name"])
-                            elif ("recipient" in event_pass and "body_part" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, recipient_id, body_part) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["recipient"]["id"], event["pass"]["body_part"]["name"])
-                            elif ("recipient" in event_pass and "type" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, recipient_id, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["recipient"]["id"], event["pass"]["type"]["name"])
-                            elif ("recipient" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, recipient_id) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["recipient"]["id"])
-                            elif ("body_part" in event_pass and "type" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, body_part, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["body_part"]["name"], event["pass"]["type"]["name"])
-                            elif ("body_part" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, body_part) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["body_part"]["name"])
-                            elif ("type" in event_pass):
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height, type) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"], event["pass"]["type"]["name"])
-                            else:
-                                args += "INSERT INTO pass(event_id, player_id, location, end_location, duration, length, angle, height) VALUES ('{}', '{}', '{}', '{}', {}, {}, {}, '{}');".format(event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"])
-                        
+
+                            parameters = "event_id, player_id, location, end_location, duration, length, angle, height"
+                            values = [event["id"], event["player"]["id"], event["location"], event["pass"]["end_location"], event["duration"], event["pass"]["length"], event["pass"]["angle"], event["pass"]["height"]["name"]]
+
+                            if ("recipient" in event_pass): 
+                                parameters += ", recipient_id"
+                                values.append(event["pass"]["recipient"]["id"])
+
+                            if ("body_part" in event_pass):
+                                parameters += ", body_part"
+                                values.append(event["pass"]["body_part"]["name"])
+
+                            if ("technique" in event_pass):
+                                parameters += ", technique"
+                                values.append(event["pass"]["technique"]["name"])
+
+                            if ("shot_assist" in event_pass):
+                                parameters += ", shot_assist"
+                                values.append(event["pass"]["shot_assist"])
+
+                            if ("outcome" in event_pass):
+                                parameters += ", outcome"
+                                values.append(event["pass"]["outcome"]["name"])
+
+                            if ("type" in event_pass):
+                                parameters += ", type"
+                                values.append(event["pass"]["type"]["name"])
+
+                            args += "INSERT INTO pass(" + parameters + ") VALUES (" 
+                            for i in range(len(values)):
+                                if (i == len(values)-1): # Don't put comma after last parameter
+                                    args += "'{}'".format(values[i])
+                                else:
+                                    args += "'{}',".format(values[i])
+                            args += ");"
+
                         case 33: # 50/50
                             args += "INSERT INTO _50_50(event_id, player_id, location, outcome) VALUES ('{}', {}, '{}', '{}');".format(event["id"], event["player"]["id"], event["location"], event["50_50"]["outcome"]["name"])
                         
