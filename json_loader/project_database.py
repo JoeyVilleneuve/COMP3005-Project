@@ -3,14 +3,6 @@ import json
 from pathlib import Path
 
 # ESTABLISH CONNECTION -----------------------------
-print("""
-COMP3005 Group 9 Project - 'project_database' Script
-Authors: Joey Villeneuve, Ben Seguin, Austin Rimmer
-====================================================
-TA - Please change login credentials as needed in-file before running.
-      
-Creating database, this may take a few minutes...
-""")
 
 # TA: Change as needed
 user = 'postgres'
@@ -24,7 +16,14 @@ connection = psycopg.connect(dbname='postgres', user=user, password=password, ho
 connection.autocommit = True
 cursor = connection.cursor()
 cursor.execute('DROP DATABASE IF EXISTS project_database')
-cursor.execute('CREATE DATABASE project_database')
+cursor.execute("""
+                CREATE DATABASE project_database
+                WITH OWNER "postgres"
+                ENCODING 'UTF8'
+                LC_COLLATE = 'en_US.UTF-8'
+                LC_CTYPE = 'en_US.UTF-8'
+                TEMPLATE template0;
+               """)
 
 # Connect to project_database
 connection = psycopg.connect(dbname='project_database', user=user, password=password, host=host, port=port)
@@ -828,4 +827,3 @@ for entry in data_directory.iterdir(): # Read in events after lineups have been 
 connection.commit()
 cursor.close()
 connection.close()
-print("Script completed successfully.")
