@@ -1,0 +1,49 @@
+SELECT team_name, COUNT(shot_id)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN pass ON shot.event_id = event.event_id
+	JOIN team ON team.team_id = event.team_id
+	WHERE season_id = 44
+	GROUP BY team_name
+	ORDER BY COUNT(shot_id) DESC
+
+SELECT player_name, COUNT (technique)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN shot ON pass.event_id = pass.event_id
+	JOIN player ON player.player_id = pass.player_id
+	WHERE season_id = 90, technique = "Through Ball"
+	GROUP BY player_name
+	ORDER BY COUNT (technique) DESC
+
+SELECT team_name, COUNT (technique)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN shot ON pass.event_id = event.event_id
+	JOIN team ON team.team_id = event.team_id
+	WHERE season_id = 90, technique = "Through Ball"
+	GROUP BY team_name
+	ORDER BY COUNT (technique) DESC
+
+SELECT player_name, COUNT(outcome)
+        FROM(
+	        SELECT player_name, outcome
+	        FROM match
+	        JOIN event ON event.match_id = match.match_id
+	        JOIN shot ON dribble.event_id = event.event_id
+	        JOIN player ON player.player_id = dribble.player_id
+	        WHERE season_id != 44
+	        )
+            AS x
+	        WHERE outcome = true
+	        GROUP BY player_name
+	        ORDER BY COUNT(first_time) DESC
+
+SELECT player_name, COUNT(dribble_past_id)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN shot ON pass.event_id = pass.event_id
+	JOIN player ON player.player_id = pass.player_id
+	WHERE season_id = 90
+	GROUP BY team_name
+	ORDER BY COUNT(shot_id) ASC
