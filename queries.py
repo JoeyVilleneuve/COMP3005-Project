@@ -311,7 +311,16 @@ def Q_6(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ """
+    query = """ 
+    SELECT team_name, COUNT(shot_id)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN pass ON shot.event_id = event.event_id
+	JOIN team ON team.team_id = event.team_id
+	WHERE season_id = 44
+	GROUP BY team_name
+	ORDER BY COUNT(shot_id) DESC
+    """
 
     #==========================================================================
 
@@ -329,7 +338,8 @@ def Q_7(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ """
+    query = """ 
+    """
 
     #==========================================================================
 
@@ -347,7 +357,8 @@ def Q_8(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ """
+    query = """ 
+    """
 
     #==========================================================================
 
@@ -365,7 +376,8 @@ def Q_9(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ """
+    query = """ 
+    """
 
     #==========================================================================
 
@@ -383,7 +395,8 @@ def Q_10(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ """
+    query = """ 
+    """
 
     #==========================================================================
 
