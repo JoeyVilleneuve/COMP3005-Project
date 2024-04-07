@@ -1,49 +1,87 @@
+
+#Q6 averages 2/30 outliers
 SELECT team_name, COUNT(shot_id)
 	FROM match
 	JOIN event ON event.match_id = match.match_id
-	JOIN pass ON shot.event_id = event.event_id
+	JOIN shot ON shot.event_id = event.event_id
 	JOIN team ON team.team_id = event.team_id
 	WHERE season_id = 44
 	GROUP BY team_name
 	ORDER BY COUNT(shot_id) DESC
 
-SELECT player_name, COUNT (technique)
+	#Q6 faster version (by 8 ms based on avgs) averages 4/30 outliers
+	SELECT team_name, COUNT(shot_id)
 	FROM match
 	JOIN event ON event.match_id = match.match_id
-	JOIN shot ON pass.event_id = pass.event_id
-	JOIN player ON player.player_id = pass.player_id
-	WHERE season_id = 90, technique = "Through Ball"
-	GROUP BY player_name
-	ORDER BY COUNT (technique) DESC
-
-SELECT team_name, COUNT (technique)
-	FROM match
-	JOIN event ON event.match_id = match.match_id
-	JOIN shot ON pass.event_id = event.event_id
+	JOIN shot ON shot.event_id = event.event_id
 	JOIN team ON team.team_id = event.team_id
-	WHERE season_id = 90, technique = "Through Ball"
+	WHERE season_id != 90 AND season_id != 4 AND season_id != 42
 	GROUP BY team_name
-	ORDER BY COUNT (technique) DESC
+	ORDER BY COUNT(shot_id) DESC
+#Q7
+	SELECT player_name, COUNT (technique)
+		FROM match
+		JOIN event ON event.match_id = match.match_id
+		JOIN pass ON pass.event_id = event.event_id
+		JOIN player ON player.player_id = pass.player_id
+		WHERE season_id = 90 AND technique = 'Through Ball'
+		GROUP BY player_name
+		ORDER BY COUNT (technique) DESC
 
-SELECT player_name, COUNT(outcome)
+#Q7 possible faster way (nvm)
+SELECT player.player_name, COUNT(pass.technique) AS through_ball_count
+FROM player
+JOIN pass ON player.player_id = pass.player_id
+JOIN event ON pass.event_id = event.event_id
+JOIN match ON event.match_id = match.match_id
+WHERE match.season_id = 90 AND pass.technique = 'Through Ball'
+GROUP BY player.player_name
+ORDER BY through_ball_count DESC;
+
+#Q7 another possible faster way, has more outliers tho
+SELECT p.player_name, COUNT(*) AS technique_count
+FROM (
+    SELECT pass.player_id
+    FROM match
+    JOIN event ON event.match_id = match.match_id
+    JOIN pass ON pass.event_id = event.event_id
+    WHERE match.season_id = 90 AND pass.technique = 'Through Ball'
+) AS filtered_passes
+JOIN player p ON p.player_id = filtered_passes.player_id
+GROUP BY p.player_name
+ORDER BY technique_count DESC;
+
+#Q8
+	SELECT team_name, COUNT (technique)
+		FROM match
+		JOIN event ON event.match_id = match.match_id
+		JOIN pass ON pass.event_id = event.event_id
+		JOIN team ON team.team_id = event.team_id
+		WHERE season_id = 90 AND technique = 'Through Ball'
+		GROUP BY team_name
+		ORDER BY COUNT (technique) DESC
+
+
+#Q9
+	SELECT player_name, COUNT(outcome)
         FROM(
 	        SELECT player_name, outcome
 	        FROM match
 	        JOIN event ON event.match_id = match.match_id
-	        JOIN shot ON dribble.event_id = event.event_id
+	        JOIN dribble ON dribble.event_id = event.event_id
 	        JOIN player ON player.player_id = dribble.player_id
 	        WHERE season_id != 44
 	        )
             AS x
-	        WHERE outcome = true
+	        WHERE outcome = 'Complete'
 	        GROUP BY player_name
-	        ORDER BY COUNT(first_time) DESC
-
-SELECT player_name, COUNT(dribble_past_id)
-	FROM match
-	JOIN event ON event.match_id = match.match_id
-	JOIN shot ON pass.event_id = pass.event_id
-	JOIN player ON player.player_id = pass.player_id
-	WHERE season_id = 90
-	GROUP BY player_name
-	ORDER BY COUNT(shot_id) ASC
+	        ORDER BY COUNT(outcome) DESC
+#Q10
+	SELECT player_name, COUNT (dribbled_past_id)
+				FROM match
+				JOIN event ON event.match_id = match.match_id
+				JOIN dribbled_past ON dribbled_past.event_id = event.event_id
+				JOIN player ON player.player_id = dribbled_past.player_id
+				WHERE season_id = 90
+				GROUP BY player_name
+				ORDER BY COUNT (dribbled_past_id) ASC
