@@ -45,5 +45,5 @@ SELECT player_name, COUNT(dribble_past_id)
 	JOIN shot ON pass.event_id = pass.event_id
 	JOIN player ON player.player_id = pass.player_id
 	WHERE season_id = 90
-	GROUP BY team_name
+	GROUP BY player_name
 	ORDER BY COUNT(shot_id) ASC
