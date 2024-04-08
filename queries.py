@@ -288,7 +288,6 @@ def Q_5(cursor, conn, execution_time):
     FROM match
     JOIN event ON event.match_id = match.match_id
     JOIN pass ON pass.event_id = event.event_id
-    JOIN team ON team.team_id = event.team_id
     INNER JOIN player ON player.player_id = pass.recipient_id
     WHERE season_id = 44
     GROUP BY player_name
@@ -311,11 +310,11 @@ def Q_6(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ 
+    query = """
     SELECT team_name, COUNT(shot_id)
 	FROM match
 	JOIN event ON event.match_id = match.match_id
-	JOIN pass ON shot.event_id = event.event_id
+	JOIN shot ON shot.event_id = event.event_id
 	JOIN team ON team.team_id = event.team_id
 	WHERE season_id = 44
 	GROUP BY team_name
@@ -338,7 +337,15 @@ def Q_7(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ 
+    query = """
+    SELECT player_name, COUNT (technique)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN pass ON pass.event_id = event.event_id
+	JOIN player ON player.player_id = pass.player_id
+	WHERE season_id = 90 AND technique = 'Through Ball'
+	GROUP BY player_name
+	ORDER BY COUNT (technique) DESC
     """
 
     #==========================================================================
@@ -357,7 +364,15 @@ def Q_8(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ 
+    query = """
+    SELECT team_name, COUNT (technique)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN pass ON pass.event_id = event.event_id
+	JOIN team ON team.team_id = event.team_id
+	WHERE season_id = 90 AND technique = 'Through Ball'
+	GROUP BY team_name
+	ORDER BY COUNT (technique) DESC
     """
 
     #==========================================================================
@@ -376,7 +391,20 @@ def Q_9(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ 
+    query = """
+    SELECT player_name, COUNT(outcome)
+        FROM(
+	        SELECT player_name, outcome
+	        FROM match
+	        JOIN event ON event.match_id = match.match_id
+	        JOIN dribble ON dribble.event_id = event.event_id
+	        JOIN player ON player.player_id = dribble.player_id
+	        WHERE season_id != 44
+	        )
+            AS x
+	        WHERE outcome = 'Complete'
+	        GROUP BY player_name
+	        ORDER BY COUNT(outcome) DESC
     """
 
     #==========================================================================
@@ -395,7 +423,15 @@ def Q_10(cursor, conn, execution_time):
     #==========================================================================    
     # Enter QUERY within the quotes:
     
-    query = """ 
+    query = """
+    SELECT player_name, COUNT (dribbled_past_id)
+	FROM match
+	JOIN event ON event.match_id = match.match_id
+	JOIN dribbled_past ON dribbled_past.event_id = event.event_id
+	JOIN player ON player.player_id = dribbled_past.player_id
+	WHERE season_id = 90
+	GROUP BY player_name
+	ORDER BY COUNT (dribbled_past_id) ASC
     """
 
     #==========================================================================
