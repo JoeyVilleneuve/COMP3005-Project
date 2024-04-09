@@ -1,7 +1,7 @@
 # COMP3005-Project
 Group members: Joey Villeneuve (101187383), Ben Seguin (101196580), Austin Rimmer (101219747)
 
-This is a PostgreSQL project that uses Python and psycopg3 to create a database called "project_database" and query it.
+This is a PostgreSQL project that uses Python and psycopg3 to create a database called "project_database" and query it. Please see the project report PDF for more information.
 
 # Setup
 1. Ensure that you have a PostgreSQL server running on your device with the user "postgres" and password "1234".
