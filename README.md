@@ -17,6 +17,6 @@ How to export project_database to .sql file: Execute 'pg_dump -U postgres -h loc
 How to run autograder: "queries.py" refers to the exported .sql file "dbexport.sql". Make sure it is correct, then run "queries.py".
 
 # Team Contributions
-Joey Villeneuve: Designed the database, made project_database.py script, made ER Model diagram, assisted with project report PDF.
-Ben Seguin: Wrote queries 1-5, made Schema diagrams, wrote project report PDF.
-Austin Rimmer: Wrote queries 6-10.
+- Joey Villeneuve: Designed the database, made project_database.py script, made ER Model diagram, assisted with project report PDF.
+- Ben Seguin: Wrote queries 1-5, made Schema diagrams, wrote project report PDF.
+- Austin Rimmer: Wrote queries 6-10.
